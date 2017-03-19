@@ -35,7 +35,7 @@ func main() {
 
 	err := shim.Start(new(SimpleChaincode))
 	if err != nil {
-		fmt.Printf("Error starting Simple chaincode - changed: %s", err)
+		fmt.Printf("Error starting Simple chaincode: %s", err)
 	}
 }
 
@@ -45,7 +45,11 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string
 		return nil, errors.New("Incorrect number of arguments. Expecting 1")
 	}
 
-	err := stub.PutState("hello_world - Cassolato", []byte(args[0]))
+	stateKey := "hello_world_mychain"
+	stateContent := args[0]
+	fmt.Println("Puting the value" + stateContent + " in the key: " + stateKey)
+
+	err := stub.PutState(stateKey, []byte(stateContent))
 	if err != nil {
 		return nil, err
 	}
@@ -57,29 +61,32 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string
 func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 	fmt.Println("invoke is running " + function)
 
-	// Handle different functions
-	if function == "init" { //initialize the chaincode state, used as reset
+	switch function {
+	case "init":
 		return t.Init(stub, "init", args)
-	} else if function == "write" {
-		return t.write(stub, args)
-	}
 
-	fmt.Println("invoke did not find func: " + function) //error
+	case "write":
+		return t.write(stub, args)
+
+	default:
+		fmt.Println("invoke did not find func: " + function) //error
+
+	}
 
 	return nil, errors.New("Received unknown function invocation: " + function)
 }
 
 func (t *SimpleChaincode) write(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	var name, value string
 	var err error
+
 	fmt.Println("running write()")
 
 	if len(args) != 2 {
 		return nil, errors.New("Incorrect number of arguments. Expecting 2. name of the variable and value to set")
 	}
 
-	name = args[0] //rename for fun
-	value = args[1]
+	name := args[0] //rename for fun
+	value := args[1]
 	err = stub.PutState(name, []byte(value)) //write the variable into the chaincode state
 
 	if err != nil {
@@ -97,6 +104,7 @@ func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 	if function == "read" { //read a variable
 		return t.read(stub, args)
 	}
+
 	fmt.Println("query did not find func: " + function)
 
 	return nil, errors.New("Received unknown function query")
